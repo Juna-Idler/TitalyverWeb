@@ -43,7 +43,7 @@ class KaraokeLine
         if (linehead)
         {
             this.starttime = linehead[1] * 60000 + linehead[2] * 1000 + linehead[3] * 10;
-            let ttts = textline.match(/\[\d+:\d+[:.]\d+\][^\[]]*/g);
+            let ttts = textline.match(/\[\d+:\d+[:.]\d+\][^\[\]]*/g);
             ttts.forEach(ttt => {
                 this.words.push(new TimeTagedText(ttt));
             });
@@ -67,7 +67,7 @@ class KaraokeContainer
     {
         this.lines = [];
         let lines = [];
-        karaoketext.split(/\r\n|\r|\n/).array.forEach(line => {
+        karaoketext.split(/\r\n|\r|\n/).forEach(line => {
 
             let linehead = line.match(/^\[(\d+):(\d+)[:.](\d+)\]/);
             if (linehead)
@@ -80,7 +80,7 @@ class KaraokeContainer
         for (let i = 0;i< lines.length - 1;i++)
         {
             let nextttt = new TimeTagedText(lines[i+1]);
-            this.lines.push(new KaraokeLine(line,nextttt.starttime));
+            this.lines.push(new KaraokeLine(lines[i],nextttt.starttime));
         }
     }
 
