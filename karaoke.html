@@ -24,8 +24,6 @@
              2px -2px 3px navy,
             -2px -2px 3px navy;
 
-    transition-property: color, text-shadow;
-    transition-duration:0.8s;
 }
 .KaraokeActiveLine {
     color :white;
@@ -33,14 +31,13 @@
             -2px  2px 3px blue,
              2px -2px 3px blue,
             -2px -2px 3px blue;
-
 }
 .KaraokeActiveWord {
     color :white;
     text-shadow: 2px  2px 3px red,
-            -2px  2px 3px red,
-             2px -2px 3px red,
-            -2px -2px 3px red;
+                -2px  2px 3px red,
+                2px -2px 3px red,
+                -2px -2px 3px red;
 }
 
 
@@ -73,7 +70,7 @@ function Tick()
                 if (line.words[j].starttime <= now)
                 {
                     const activeword = document.getElementById('KaraokeWord' + i + "_" + j);
-                    if (!activeword.style.transitionProperty)
+                    if (!activeword.style.textShadow)
                     {
                         activeword.style.textShadow = ' 2px  2px 3px red,\
                                                         -2px  2px 3px red,\
@@ -81,7 +78,8 @@ function Tick()
                                                         -2px -2px 3px red'
 //                        activeword.style.color = "black";
                         activeword.style.transitionProperty = "color , text-shadow";
-                        const d = line.words[j+1].starttime - now;
+                        let d = line.words[j+1].starttime - now;
+                        if (d < 0) d = 0;
                         activeword.style.transitionDuration = d / 1000.0 + "s";
                     }
                 }
@@ -93,10 +91,10 @@ function Tick()
             {
                 for (let j = 0; j < line.children.length; j++) {
                     const word = line.children[j];
-                    word.style.transitionProperty = "";
-                    word.style.transitionDuration = "";
-                    word.style.color = "";
-                    word.style.textShadow = "";
+ //                   word.style.transitionProperty = null;
+                    word.style.transitionDuration = "1s";
+                    word.style.color = null;
+                    word.style.textShadow = null;
                 }
                 line.classList.replace("KaraokeActiveLine","KaraokeLine");
             }
