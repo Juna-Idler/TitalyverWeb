@@ -12,7 +12,7 @@ class RubyText
 {
     constructor(text,atrubytag)
     {
-        this.Words = atrubytag.Translate(text);
+        this.words = atrubytag.Translate(text);
     }
 }
 
@@ -53,22 +53,18 @@ class AtRubyTag
                     {
                         this.rubying.push(new RubyingWord(rat[1],rat[5],rat[3],rat[4]));
                     }
-                    continue;
                 }
-                if (name == "ruby_parent")
+                else if (name == "ruby_parent")
                 {
                     this.ruby_parent = value;
-                    continue;
                 }
-                if (name == "ruby_begin")
+                else if (name == "ruby_begin")
                 {
                     this.ruby_begin = value;
-                    continue;
                 }
-                if (name == "ruby_end")
+                else if (name == "ruby_end")
                 {
                     this.ruby_end = value;
-                    continue;
                 }
             }
         });
@@ -184,7 +180,7 @@ class RubyLyricsContainer
             let word = new TimeTagedText(line);
             if (word.starttime >= 0)
             {
-                let rubyline = new RubyText(word.word,this.AtRubyTag);
+                let rubyline = new RubyText(word.text,this.AtRubyTag);
                 rubyline.starttime = word.starttime;
                 this.lines.push(rubyline);
             }

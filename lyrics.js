@@ -52,7 +52,8 @@ class KaraokeLine
             {
                 this.words[i].endtime = this.words[i+1].starttime;
             }
-            this.words[this.words.length-1].endtime = nexttime;
+            const lasttime = this.words[this.words.length-1].starttime;
+            this.words[this.words.length-1].endtime = nexttime > lasttime ? nexttime : lasttime;
         }
         else
         {
@@ -85,3 +86,5 @@ class KaraokeContainer
     }
 
 }
+
+

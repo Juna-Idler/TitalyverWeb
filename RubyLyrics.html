@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Titalyver</title>
+ <style>
+#Player {
+    position: fixed;
+    top:0;
+    left:0;
+}
+
+
+#LyricsView {
+    text-align: center;
+    background-color: black;
+    font-size: 24px;
+    
+    line-height: 40px;
+    
+}
+.LyricsLine {
+    color :white;
+    text-shadow: 2px  2px 3px red,
+            -2px  2px 3px red,
+             2px -2px 3px red,
+            -2px -2px 3px red;
+  
+
+    transition-property: color, text-shadow;
+    transition-duration:0.8s;
+    
+}
+.ActiveLine {
+    color :white;
+    text-shadow: 2px  2px 3px blue,
+            -2px  2px 3px blue,
+             2px -2px 3px blue,
+            -2px -2px 3px blue;
+
+    
+
+    transition-property: color , text-shadow ;
+    transition-duration:0.5s;
+    
+}
+</style>
+
+<script src="lyrics.js"></script>
+<script src="Rubylyrics.js"></script>
+<script>
+
+var TimerID;
+var audio;
+var lyrics;
+var FadeTime = 0.5 * 1000;
+
+function Tick()
+{
+    const now = audio.currentTime * 1000;
+    let i;
+    for (i = 0;i < lyrics.lines.length-1;i++)
+    {
+        if (lyrics.lines[i].starttime <= now + FadeTime && now + FadeTime < lyrics.lines[i+1].starttime)
+        {
+            const active = document.getElementById('LyricsLine' + i);
+            if (active.classList.contains("LyricsLine"))
+            {
+                active.classList.replace("LyricsLine","ActiveLine");
+                active.scrollIntoView({behavior: "smooth", block: "nearest", inline: "nearest"})
+            }
+        }else
+        {
+            const line = document.getElementById('LyricsLine' + i);
+            if (line.classList.contains("ActiveLine"))
+                line.classList.replace("ActiveLine","LyricsLine");
+        }
+      
+
+    }
+
+}
+
+window.onload = function() {
+const lyricstext = document.getElementById('LyricsText').value;
+audio = document.getElementById("song");
+
+audio.addEventListener("play",()=>{
+    TImerID = setInterval(Tick,33);
+});
+audio.addEventListener("pause", ()=>{
+    clearInterval(TimerID);
+});
+audio.addEventListener("ended",()=>{
+    clearInterval(TimerID);
+});
+audio.addEventListener("timeupdate",()=>{
+    Tick();
+});
+
+
+lyrics = new RubyLyricsContainer(lyricstext);
+
+const lyricsview = document.getElementById('LyricsView');
+let line_count = 0;
+lyrics.lines.forEach(line => {
+    let e = document.createElement("span");
+
+    e.innerHTML = "";
+    line.words.forEach(word =>{
+        if (word.ruby != "")
+        {
+            e.innerHTML += "<ruby>" + word.word + "<rt>" + word.ruby + "</ruby>";
+        }
+        else
+        {
+//どういう訳か、色変更しかしないスタイルシートを切り替えるときに、ルビ無し行と空行が近くにあるとブレる
+//ので空行とルビのない部分に全角空白をぶち込む
+            let w = word.word != "" ? word.word : "　";
+            e.innerHTML += "<ruby>" + w + "<rt>　</ruby>";
+        }
+        console.log(word.word);
+    });
+
+    e.id = "LyricsLine" + line_count++;
+    e.className = "LyricsLine";
+    lyricsview.appendChild(e);
+    lyricsview.appendChild(document.createElement("br"));
+  
+});
+
+
+}
+</script>
+</head>
+<body>
+<Div id="Player">
+    <audio id="song" preload controls>
+        <source src="魔王魂 ショート シャイニングスター.mp3" type="audio/mp3">
+    </audio>
+</Div>
+<div id="LyricsView">
+</div>
+
+<textarea id="LyricsText">
+
+[00:09.66]ただ｜風《かぜ》に｜揺《ゆ》られて
+[00:12.70]｜何《なに》も｜考《かんが》えずに
+[00:15.77]ただ｜雲《くも》を｜眺《なが》めて
+[00:18.72]｜過《す》ごすのもいいよね
+[00:21.82]
+[00:21.92]さざなみの｜音《おと》に｜癒《い》やされてく
+[00:27.90]｜軌《き》｜跡《せき》を｜運《はこ》ぶ｜風《かぜ》の｜音《ね》
+[00:30.89]｜時《とき》を｜閉《と》じ｜込《こ》めて
+[00:34.54]
+[00:35.18]シャイニングスター｜綴《つづ》れば
+[00:38.11]｜夢《ゆめ》に｜眠《ねむ》る｜幻《まぼろし》が｜掌《てのひら》に｜降《ふ》り｜注《そそ》ぐ
+[00:44.61]｜新《あら》たな｜世《せ》｜界《かい》へ
+[00:47.43]I'll believe of my sensation
+[00:50.28]｜果《は》てしない｜道《みち》の｜向《む》こうで
+[00:53.52]｜瞼《まぶた》の｜裏《うら》に｜映《うつ》る
+[00:56.71]｜一《ひと》｜滴《しずく》の｜光《ひかり》
+[00:59.76]トキメキを｜感《かん》じて
+[01:06.02]
+[01:06.22]LaLaLa LaLaLa La
+[01:09.21]LaLaLa LaLaLa La La La
+[01:15.16]
+
+@Ruby_Parent=｜
+@Ruby_Begin=《
+@Ruby_End=》
+</textarea>
+
+
+</body>
+</html>
