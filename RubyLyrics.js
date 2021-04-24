@@ -161,9 +161,6 @@ class AtRubyTag
                 }
             }
         }
-
-
-
         return r;
     }
     
@@ -177,7 +174,7 @@ class RubyLyricsContainer
         this.AtRubyTag = new AtRubyTag();
         this.AtRubyTag.LoadAtRubyTag(lyricstext);
         lyricstext.split(/\r\n|\r|\n/).forEach(line => {
-            let word = new TimeTagedText(line);
+            let word = new TimeTagElement(line);
             if (word.starttime >= 0)
             {
                 let rubyline = new RubyText(word.text,this.AtRubyTag);
@@ -186,9 +183,93 @@ class RubyLyricsContainer
             }
         });
         let lastline = new RubyText("",this.AtRubyTag);
-        lastline.starttime = new TimeTagedText("[99:59.99]").starttime;
+        lastline.starttime = new TimeTagElement("[99:59.99]").starttime;
 
         this.lines.push(lastline);
     }
 
+}
+
+class TimeTagRubyWord
+{
+    constructor(word_ttset,ruby_ttset)
+    {
+        this.word = word_ttset;
+        this.ruby = ruby_ttset;
+        if (this.word.elements[0].starttime < 0 && this.ruby.elements[0].starttime < 0)
+            this.starttime = -1;
+        else if (this.word.elements[0].starttime >= 0 && this.ruby.elements[0].starttime >= 0)
+            this.starttime = Math.min(this.word.elements[0].starttime,this.ruby.elements[0].starttime);
+        else
+            this.starttime = Math.max(this.word.elements[0].starttime,this.ruby.elements[0].starttime);
+
+        const wle = this.word.elements[this.word.elements.length-1];
+        const rle = this.ruby.elements[this.ruby.elements.length-1];
+        const wet = (wle.text == "" && wle.starttime >= 0) ? wle.starttime : -1;
+        const ret = (rle.text == "" && rle.starttime >= 0) ? rle.starttime : -1;
+        this.endtime = Math.max(wet,ret);
+    }
+}
+
+class RubyKaraokeLine
+{
+    constructor(textline,atrubytag)
+    {
+        this.Words = [];
+        const words = atrubytag.Translate(textline);
+        for (let i = 0; i < words.length;i++)
+        {
+            const wordtts = new TimeTagSet(words[i].word);
+            if (words[i].ruby != "")
+            {
+                const rubytts = new TimeTagSet(words[i].ruby);
+                this.Words.push(new TimeTagRubyWord(wordtts,rubytts));
+            }
+            else
+            {
+                this.Words.push(new TimeTagRubyWord(wordtts,new TimeTagSet("")));
+            }
+        }
+//[]タイムタグで認識しなかった@rubyを追加したいが、このデータ構造だとめっちゃめんどくさいな
+
+        this.starttime = this.Words[0].starttime;
+
+    }
+}
+
+class RubyKaraokeContainer
+{
+    constructor(karaoketext)
+    {
+        this.lines = [];
+        let lines = [];
+        karaoketext.split(/\r\n|\r|\n/).forEach(line => {
+ 
+            let linehead = line.match(/^\[(\d+):(\d+)[:.](\d+)\]/);
+            if (linehead)
+            {
+                lines.push(line);
+            }
+        });
+        lines.push("[99:59.99]");
+        if (lines.length == 1)
+        {
+            return;
+        }
+
+        this.AtRubyTag = new AtRubyTag();
+        this.AtRubyTag.LoadAtRubyTag(karaoketext);
+        let line = new RubyKaraokeLine(lines[0],this.AtRubyTag);
+        for (let i = 0;i< lines.length - 1;i++)
+        {
+            let nextline = new RubyKaraokeLine(lines[i+1],this.AtRubyTag);
+            
+            const lasttime = line.Words[line.Words.length-1].starttime;
+            line.endtime = nextline.starttime > lasttime ? nextline.starttime : lasttime;
+
+            this.lines.push(line);
+            line = nextline;
+        }
+
+    }
 }
