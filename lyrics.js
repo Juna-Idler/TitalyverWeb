@@ -7,7 +7,8 @@ class TimeTagElement
         if (match)
         {
             this.text = match[4];
-            this.starttime = match[1] * 60000 + match[2] * 1000 + match[3] * 10;
+            let second = parseFloat(match[2] + '.' + match[3]);
+            this.starttime = (match[1] * 60000 + second * 1000).toFixed();
         }
         else
         {
@@ -16,32 +17,6 @@ class TimeTagElement
         }
     }
 }
-class TimeTagSet
-{
-    constructor(text)
-    {
-        this.elements = [];
-        let head = text.match(/^\[(\d+):(\d+)[:.](\d+)\]/);
-        if (head)
-        {
-            let ttelements = text.match(/\[\d+:\d+[:.]\d+\][^\[\]]*/g);
-            ttelements.forEach(tte => {
-                this.elements.push(new TimeTagElement(tte));
-            });
-        }
-        else
-        {
-            this.elements.push(new TimeTagElement(text));
-        }
-    }
-    get string()
-    {
-        let ret = "";
-        this.elements.forEach(e =>{ret += e.text;});
-        return ret;
-    }
-}
-
 class LyricsContainer
 {
     constructor(lyticstext)
@@ -59,32 +34,72 @@ class LyricsContainer
 }
 
 
+class KaraokeUnit
+{
+    constructor(text,endtime= -1)
+    {
+        this.elements = [];
+        let head = text.match(/^\[(\d+):(\d+)[:.](\d+)\]/);
+        if (head)
+        {
+            const ttelements = text.match(/\[\d+:\d+[:.]\d+\][^\[\]]*/g);
+            ttelements.forEach(tte => {
+                this.elements.push(new TimeTagElement(tte));
+            });
+        }
+        else
+        {
+            const tmp = "[00:00.00]" + text;
+            const ttelements = tmp.match(/\[\d+:\d+[:.]\d+\][^\[\]]*/g);
+            ttelements.forEach(tte => {
+                this.elements.push(new TimeTagElement(tte));
+            });
+            this.elements[0].starttime = -1;
+        }
+        if (this.elements.length > 1 && this.elements[this.elements.length-1].text == "")
+        {
+            const lasttime = this.elements[this.elements.length-1].starttime;
+            this.endtime = Math.max(lasttime,endtime); 
+        }
+        else
+            this.endtime = endtime;
+    }
+    get starttime()
+    {
+        return this.elements[0].starttime;
+    }
+    set starttime(value)
+    {
+        this.elements[0].starttime = value;
+    }
+    get string()
+    {
+        let ret = "";
+        this.elements.forEach(e =>{ret += e.text;});
+        return ret;
+    }
+}
+
+
 class KaraokeContainer
 {
     constructor(karaoketext)
     {
         this.lines = [];
-        let lines = [];
         karaoketext.split(/\r\n|\r|\n/).forEach(line => {
 
             let linehead = line.match(/^\[(\d+):(\d+)[:.](\d+)\]/);
             if (linehead)
             {
-                lines.push(line);
+                this.lines.push(new KaraokeUnit(line));
             }
         });
-        lines.push("[99:59.99]");
+        this.lines.push(new KaraokeUnit("[99:59.99]"));
 
-        let tts = new TimeTagSet(lines[0]);
-        tts.starttime = tts.elements[0].starttime;
-        for (let i = 0;i< lines.length - 1;i++)
+        for (let i = 0;i< this.lines.length - 1;i++)
         {
-            let nexttts = new TimeTagSet(lines[i+1]);
-            nexttts.starttime = nexttts.elements[0].starttime;
-            const lasttime = tts.elements[tts.elements.length-1].starttime;
-            tts.endtime = nexttts.starttime > lasttime ? nexttts.starttime : lasttime;
-            this.lines.push(tts);
-            tts = nexttts;
+            if (this.lines[i].endtime < this.lines[i+1].starttime)
+                this.lines[i].endtime = this.lines[i+1].starttime;
         }
     }
 

@@ -15,9 +15,10 @@
     text-align: center;
     background-color: black;
     font-size: 24px;
+    line-height: 40px;
 
 }
-.KaraokeLine {
+.KaraokeStanbyLine {
     color :white;
     text-shadow: 2px  2px 3px navy,
             -2px  2px 3px navy,
@@ -54,109 +55,58 @@ var lyrics;
 function Tick()
 {
     const now = audio.currentTime * 1000;
-    let i;
-    for (i = 0;i < lyrics.lines.length-1;i++)
+
+    const lyricsview = document.getElementById('KaraokeView');
+    const lines = lyricsview.querySelectorAll("span.KaraokeLine");
+    for (let i = 0;i < lines.length-1;i++)
     {
-        if (lyrics.lines[i].starttime <= now && now < lyrics.lines[i+1].starttime)
+        if (lines[i].dataset.starttime <= now && now < lines[i].dataset.endtime)
         {
-            const activeline = document.getElementById('KaraokeLine' + i);
-            if (activeline.classList.contains("KaraokeLine"))
+            const activeline = lines[i];
+            if (activeline.classList.contains("KaraokeStanbyLine"))
             {
-                activeline.classList.replace("KaraokeLine","KaraokeActiveLine");
+                activeline.classList.replace("KaraokeStanbyLine","KaraokeActiveLine");
                 activeline.scrollIntoView({behavior: "smooth", block: "nearest", inline: "nearest"})
             }
-            let line = lyrics.lines[i];
-            let id_index = 0;
-            for (let j = 0;j < line.Words.length;j++)
+
+            const spans = activeline.querySelectorAll("span");
+            for (let j = 0;j < spans.length-1;j++)
             {
-                for (let k = 0;k < line.Words[j].word.elements.length-1;k++)
+                const activeword = spans[j];
+                if (activeword.dataset.starttime <= now)
                 {
-                    if (line.Words[j].word.elements[k].starttime <= now)
-                    {
-                        const activeword = document.getElementById('KaraokeWord' + i + "_" + id_index++);
-                        if (!activeword.style.textShadow)
-                        {
-                            activeword.style.textShadow = ' 2px  2px 3px red,\
-                                                            -2px  2px 3px red,\
-                                                            2px -2px 3px red,\
-                                                            -2px -2px 3px red'
-//                        activeword.style.color = "black";
-                            activeword.style.transitionProperty = "color , text-shadow";
-                            let d = line.Words[j].word.elements[k+1].starttime - now;
-                            if (d < 0) d = 0;
-                            activeword.style.transitionDuration = d / 1000.0 + "s";
-                        }
-                    }
-                }
-                if (line.Words[j].word.elements[line.Words[j].word.elements.length-1].starttime <= now)
-                {
-                    const activeword = document.getElementById('KaraokeWord' + i + "_" + id_index++);
                     if (!activeword.style.textShadow)
                     {
+                        activeword.style.transitionProperty = "color , text-shadow";
+                        let d = activeword.dataset.endtime - now;
+                        if (d < 0) d = 0;
+                        activeword.style.transitionDuration = d / 1000.0 + "s";
                         activeword.style.textShadow = ' 2px  2px 3px red,\
                                                         -2px  2px 3px red,\
                                                         2px -2px 3px red,\
                                                         -2px -2px 3px red'
-//                        activeword.style.color = "black";
-                        activeword.style.transitionProperty = "color , text-shadow";
-                        let d = line.Words[j].endtime - now;
-                        if (d < 0) d = 0;
-                        activeword.style.transitionDuration = d / 1000.0 + "s";
-                    }
-                }
-                for (let k = 0;k < line.Words[j].ruby.elements.length-1;k++)
-                {
-                    if (line.Words[j].ruby.elements[k].starttime <= now)
-                    {
-                        const activeword = document.getElementById('KaraokeWord' + i + "_" + id_index++);
-                        if (!activeword.style.textShadow)
-                        {
-                            activeword.style.textShadow = ' 2px  2px 3px red,\
-                                                            -2px  2px 3px red,\
-                                                            2px -2px 3px red,\
-                                                            -2px -2px 3px red'
-//                        activeword.style.color = "black";
-                            activeword.style.transitionProperty = "color , text-shadow";
-                            let d = line.Words[j].ruby.elements[k+1].starttime - now;
-                            if (d < 0) d = 0;
-                            activeword.style.transitionDuration = d / 1000.0 + "s";
-                        }
-                    }
-                }
-                if (line.Words[j].ruby.elements[line.Words[j].ruby.elements.length-1].starttime <= now)
-                {
-                    const activeword = document.getElementById('KaraokeWord' + i + "_" + id_index++);
-                    if (!activeword.style.textShadow)
-                    {
-                        activeword.style.textShadow = ' 2px  2px 3px red,\
-                                                        -2px  2px 3px red,\
-                                                        2px -2px 3px red,\
-                                                        -2px -2px 3px red'
-//                        activeword.style.color = "black";
-                        activeword.style.transitionProperty = "color , text-shadow";
-                        let d = line.Words[j].endtime - now;
-                        if (d < 0) d = 0;
-                        activeword.style.transitionDuration = d / 1000.0 + "s";
+    //                        activeword.style.color = "black";
                     }
                 }
             }
         }
         else
         {
-            const line = document.getElementById('KaraokeLine' + i);
-            if (line.classList.contains("KaraokeActiveLine"))
+            const stanbyline = lines[i];
+            if (stanbyline.classList.contains("KaraokeActiveLine"))
             {
-                let spans = line.querySelectorAll("span");
+                let spans = stanbyline.querySelectorAll("span");
                 spans.forEach(span =>{
                     span.style.transitionDuration = "1s";
                     span.style.color = null;
                     span.style.textShadow = null;
                 });
-                line.classList.replace("KaraokeActiveLine","KaraokeLine");
+                stanbyline.classList.replace("KaraokeActiveLine","KaraokeStanbyLine");
             }
-        }
-    }
 
+        }
+
+    }
 }
 
 window.onload = function() {
@@ -183,42 +133,66 @@ const lyricsview = document.getElementById('KaraokeView');
 let line_count = 0;
 lyrics.lines.forEach(line => {
     let le = document.createElement("span");
+//    le.id = "KaraokeLine" + line_count;
+    le.classList.add("KaraokeLine","KaraokeStanbyLine")
+    le.dataset.starttime = line.starttime;
+    le.dataset.endtime = line.endtime;
 
-    let element_count = 0;
-    line.Words.forEach(word => {
-        const re = document.createElement("ruby");
-        {
-            word.word.elements.forEach(parent =>{
-                const we = document.createElement("span");
-                we.textContent = parent.text;
-                we.id = "KaraokeWord" + line_count + "_" + element_count++;
-                re.appendChild(we);
+    if (line.units.length == 1 && line.units[0].base.elements.length == 1 &&  line.units[0].base.elements[0].text == "")
+    {
+        le.innerHTML = "<ruby>　<rt>　</ruby>";
+    }
+    else
+    {
+        let element_count = 0;
+        line.units.forEach(unit => {
+            const re = document.createElement("ruby");
+            for (let i = 0;i  < unit.base.elements.length;i++)
+            {
+                const base = unit.base.elements[i];
+                const basespan = document.createElement("span");
+                basespan.textContent = base.text;
+//                basespan.id = "KaraokeWord" + line_count + "_" + element_count++;
+                basespan.dataset.starttime = base.starttime;
+                if (i < unit.base.elements.length - 1)
+                    basespan.dataset.endtime = unit.base.elements[i+1].starttime;
+                else
+                    basespan.dataset.endtime = unit.base.endtime;
+                re.appendChild(basespan);
+            }
 
-                console.log(parent.text);
-            });
-        }
+            const rte = document.createElement("rt");
+            if (unit.hasRuby)
+            {
+                for (let i = 0;i  < unit.ruby.elements.length;i++)
+                {
+                    const ruby = unit.ruby.elements[i];
+                    const rubyspan = document.createElement("span");
+                    rubyspan.textContent = ruby.text;
+//                    rubyspan.id = "KaraokeWord" + line_count + "_" + element_count++;
+                    rubyspan.dataset.starttime = ruby.starttime;
+                    rubyspan.dataset.endtime = ruby.endtime;
+                    if (i < unit.ruby.elements.length - 1)
+                        rubyspan.dataset.endtime = unit.ruby.elements[i+1].starttime;
+                    else
+                        rubyspan.dataset.endtime = unit.ruby.endtime;
 
-        const rte = document.createElement("rt");
-        {
-            word.ruby.elements.forEach(ruby =>{
-                const we = document.createElement("span");
-                we.textContent = ruby.text;
-                we.id = "KaraokeWord" + line_count + "_" + element_count++;
-                rte.appendChild(we);
-            });
-        }
+                    rte.appendChild(rubyspan);
+                }
+            }
+            else if (unit.base.string != "")
+            {
+                rte.textContent= "　";
+            }
 
-        re.appendChild(rte);
-        le.appendChild(re);
-    })
-
-    le.id = "KaraokeLine" + line_count;
-    le.className = "KaraokeLine";
+            re.appendChild(rte);
+            le.appendChild(re);
+        });
+    }
     lyricsview.appendChild(le);
     lyricsview.appendChild(document.createElement("br"));
 
     line_count++;
-  
 });
 
 

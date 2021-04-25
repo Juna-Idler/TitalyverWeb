@@ -52,31 +52,29 @@
 
 var TimerID;
 var audio;
-var lyrics;
 var FadeTime = 0.5 * 1000;
 
 function Tick()
 {
     const now = audio.currentTime * 1000;
-    let i;
-    for (i = 0;i < lyrics.lines.length-1;i++)
-    {
-        if (lyrics.lines[i].starttime <= now + FadeTime && now + FadeTime < lyrics.lines[i+1].starttime)
-        {
-            const active = document.getElementById('LyricsLine' + i);
-            if (active.classList.contains("LyricsLine"))
-            {
-                active.classList.replace("LyricsLine","ActiveLine");
-                active.scrollIntoView({behavior: "smooth", block: "nearest", inline: "nearest"})
-            }
-        }else
-        {
-            const line = document.getElementById('LyricsLine' + i);
-            if (line.classList.contains("ActiveLine"))
-                line.classList.replace("ActiveLine","LyricsLine");
-        }
-      
 
+    const lyricsview = document.getElementById('LyricsView');
+    const spans = lyricsview.querySelectorAll("span");
+    for (let i = 0;i < spans.length-1;i++)
+    {
+        if (spans[i].dataset.starttime <= now + FadeTime && now + FadeTime < spans[i+1].dataset.starttime)
+        {
+            if (spans[i].classList.contains("LyricsLine"))
+            {
+                spans[i].classList.replace("LyricsLine","ActiveLine");
+                spans[i].scrollIntoView({behavior: "smooth", block: "nearest", inline: "nearest"})
+            }
+        }
+        else
+        {
+            if (spans[i].classList.contains("ActiveLine"))
+                spans[i].classList.replace("ActiveLine","LyricsLine");
+        }        
     }
 
 }
@@ -99,7 +97,7 @@ audio.addEventListener("timeupdate",()=>{
 });
 
 
-lyrics = new RubyLyricsContainer(lyricstext);
+const lyrics = new RubyLyricsContainer(lyricstext);
 
 const lyricsview = document.getElementById('LyricsView');
 let line_count = 0;
@@ -107,21 +105,22 @@ lyrics.lines.forEach(line => {
     let e = document.createElement("span");
 
     e.innerHTML = "";
-    line.words.forEach(word =>{
-        if (word.ruby != "")
+    line.units.forEach(unit =>{
+        if (unit.hasRuby)
         {
-            e.innerHTML += "<ruby>" + word.word + "<rt>" + word.ruby + "</ruby>";
+            e.innerHTML += "<ruby>" + unit.base + "<rt>" + unit.ruby + "</ruby>";
         }
         else
         {
 //どういう訳か、色変更しかしないスタイルシートを切り替えるときに、ルビ無し行と空行が近くにあるとブレる
 //ので空行とルビのない部分に全角空白をぶち込む
-            let w = word.word != "" ? word.word : "　";
+            let w = unit.base != "" ? unit.base : "　";
             e.innerHTML += "<ruby>" + w + "<rt>　</ruby>";
         }
-        console.log(word.word);
+        console.log(unit.base);
     });
 
+    e.dataset.starttime = line.starttime;
     e.id = "LyricsLine" + line_count++;
     e.className = "LyricsLine";
     lyricsview.appendChild(e);
