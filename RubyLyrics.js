@@ -199,7 +199,7 @@ class RubyLyricsContainer
                 this.lines.push(new RubyLyricsLine(this.AtRubyTag.Translate(word.text),word.starttime));
             }
         });
-        this.lines.push(new RubyLyricsLine(this.AtRubyTag.Translate(""),new TimeTagElement("[99:59.99]").starttime));
+        this.lines.push(new RubyLyricsLine(this.AtRubyTag.Translate(""),TimeTagElement.Create("[99:59.99]").starttime));
     }
 
 }
@@ -268,13 +268,61 @@ class RubyKaraokeLine
         {
             this.units.push(
                 new RubyKaraokeUnit(
-                    new KaraokeUnit(ruby_units[i].base),
-                    ruby_units[i].hasRuby ? new KaraokeUnit(ruby_units[i].ruby) : null));
+                    KaraokeUnit.Create(ruby_units[i].base),
+                    ruby_units[i].hasRuby ? KaraokeUnit.Create(ruby_units[i].ruby) : null));
         }
         if (this.units[this.units.length-1].endtime < 0)
             this.units[this.units.length-1].endtime = endtime;
 
 //[]タイムタグで認識しなかった@rubyを追加したいが、このデータ構造だとめっちゃめんどくさいな
+
+        let linestring = "";
+        this.units.forEach(unit =>{
+            linestring = unit.base.string;
+        });
+        const atruby_units = atrubytag.AtRubying(linestring);
+        if (atruby_units.length > 1 || atruby_units[0].hasRuby)
+        {
+            let base_index = 0;
+            for (let i = 0;i < atruby_units.length;i++)
+            {
+                if (atruby_units[i].hasRuby && this.check_addrubybase(base_index,atruby_units[i].base.length))
+                {
+                    let units_i,element_i;
+                    [units_i,element_i] = this.get_index(base_index);
+
+                    const div1 = element_i;
+                    const div2 = element_i + atruby_units[i].base.length;
+
+                    if (div1 > 0 && div2 < this.units[units_i].base.string.length)
+                    {
+                        let tail = this.units[units_i].base.DivideRear(div2);
+                        let middle = this.units[units_i].base.DivideRear(div1);
+
+                        const tail_rkunit  = new RubyKaraokeUnit(tail);
+                        const middle_rkunit  = new RubyKaraokeUnit(middle,KaraokeUnit.Create(atruby_units[i].ruby));
+                        this.units.splice(i+1,0,middle_rkunit,tail_rkunit);
+                    }
+                    else if (div1 == 0 && div2 < this.units[units_i].base.string.length)
+                    {
+                        let tail = this.units[units_i].base.DivideRear(div2);
+                        this.units[units_i].ruby = KaraokeUnit.Create(atruby_units[i].ruby);
+                        this.units.splice(i+1,0,new RubyKaraokeUnit(tail));
+                    }               
+                    else if (div1 > 0 && div2 == this.units[units_i].base.string.length)
+                    {
+                        let head = this.units[units_i].base.DivideFront(div1);
+                        this.units.splice(i,0,new RubyKaraokeUnit(head,KaraokeUnit.Create(atruby_units[i].ruby)));
+                    }
+                    else if (div1 == 0 && div2 == this.units[units_i].base.string.length)
+                    {
+                        this.units[units_i].ruby = KaraokeUnit.Create(atruby_units[i].ruby);
+                    }
+                }
+                base_index += atruby_units[i].base.length;
+            }
+        }
+
 
 //RubyKaraokeUnit境界でのタイムタグ補完処理
         for (let i = 1;i < this.units.length-1;i++)
@@ -355,6 +403,39 @@ class RubyKaraokeLine
         this.starttime = this.units[0].starttime;
         this.endtime = Math.max(this.units[this.units.length-1].endtime,endtime);
     }
+
+    check_addrubybase(index,length)
+    {
+        let distance = 0;
+        for (let i = 0; i < this.units.length;i++)
+        {
+            if (index < distance + this.units[i].base.elements.length)
+            {
+                return (this.units[i].noRuby && (index + length <= distance + this.units[i].base.string.length));
+            }
+            else
+            {
+                distance += this.units[i].base.string.length;
+            }
+        }
+        return false;
+    }
+    get_index(index)
+    {
+        let distance = 0;
+        for (let i = 0; i < this.units.length;i++)
+        {
+            if (index < distance + this.units[i].base.elements.length)
+            {
+                return [i,index - distance];
+            }
+            else
+            {
+                distance += this.units[i].base.elements.length;
+            }
+        }
+        return [-1,-1];
+    }
 }
 
 class RubyKaraokeContainer
@@ -378,7 +459,7 @@ class RubyKaraokeContainer
         this.lines = [];
         for (let i = 0;i< lines.length - 1;i++)
         {
-            const nexttime = new TimeTagElement(lines[i + 1]).starttime;
+            const nexttime = TimeTagElement.Create(lines[i + 1]).starttime;
             this.lines.push(new RubyKaraokeLine(lines[i],this.AtRubyTag,nexttime));
         }
 

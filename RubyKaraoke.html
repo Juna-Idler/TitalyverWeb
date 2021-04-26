@@ -72,11 +72,12 @@ function Tick()
             if (activeline.classList.contains("KaraokeStanbyLine"))
             {
                 activeline.classList.replace("KaraokeStanbyLine","KaraokeActiveLine");
-                activeline.scrollIntoView({behavior: "smooth", block: "nearest", inline: "nearest"})
+//                activeline.scrollIntoView({behavior: "smooth", block: "nearest", inline: "nearest"})
+                activeline.scrollIntoView({behavior: "smooth", block: "center", inline: "nearest"})
             }
 
             const spans = activeline.querySelectorAll("span");
-            for (let j = 0;j < spans.length-1;j++)
+            for (let j = 0;j < spans.length;j++)
             {
                 const activeword = spans[j];
                 if (activeword.dataset.starttime <= now)
