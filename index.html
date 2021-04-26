@@ -2,176 +2,25 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Titalyver</title>
- <style>
-#Player {
-    position: fixed;
-    top:0;
-    left:0;
-}
+  <title>Titalyver(Karaoke)</title>
 
-.shadow {
-    text-align: center;
-    font-size: 24px;
-    background-color: black;
-    color :white;
-    text-shadow: 2px  2px 3px red,
-            -2px  2px 3px red,
-             2px -2px 3px red,
-            -2px -2px 3px red;
-} 
-#LyricsView {
-    text-align: center;
-    background-color: black;
-    font-size: 24px;
-
-}
-.LyricsLine {
-    color :white;
-    text-shadow: 2px  2px 3px red,
-            -2px  2px 3px red,
-             2px -2px 3px red,
-            -2px -2px 3px red;
-
-    transition-property: color, text-shadow;
-    transition-duration:0.8s;
-}
-.ActiveLine {
-    color :white;
-    text-shadow: 2px  2px 3px blue,
-            -2px  2px 3px blue,
-             2px -2px 3px blue,
-            -2px -2px 3px blue;
-
-
-    transition-property: color , text-shadow ;
-    transition-duration:0.5s;
-  
-}
-</style>
-
-<script src="lyrics.js"></script>
-<script>
-
-var TimerID;
-var audio;
-var lyrics;
-var FadeTime = 0.5 * 1000;
-
-function Tick()
-{
-    const now = audio.currentTime * 1000;
-    let i;
-    for (i = 0;i < lyrics.lines.length-1;i++)
-    {
-//*        
-        if (lyrics.lines[i].starttime <= now + FadeTime && now + FadeTime < lyrics.lines[i+1].starttime)
-        {
-            const active = document.getElementById('LyricsLine' + i);
-            if (active.classList.contains("LyricsLine"))
-            {
-                active.classList.replace("LyricsLine","ActiveLine");
-                active.scrollIntoView({behavior: "smooth", block: "nearest", inline: "nearest"})
-            }
-        }else
-        {
-            const line = document.getElementById('LyricsLine' + i);
-            if (line.classList.contains("ActiveLine"))
-                line.classList.replace("ActiveLine","LyricsLine");
-        }
-/*/
-        if (lyrics.lines[i].starttime <= now && now <lyrics.lines[i+1].starttime)
-        {
-            const active = document.getElementById('LyricsLine' + i);
-            if (active.classList.contains("LyricsLine"))
-            {
-                active.classList.replace("LyricsLine","ActiveLine");
-                active.scrollIntoView({behavior: "smooth", block: "nearest", inline: "nearest"})
-            }
-        }else
-        {
-            const line = document.getElementById('LyricsLine' + i);
-            line.classList.replace("ActiveLine","LyricsLine");
-        }
-//*/        
-
-    }
-
-}
-
-window.onload = function() {
-const lyricstext = document.getElementById('LyricsText').value;
-audio = document.getElementById("song");
-
-audio.addEventListener("play",()=>{
-    TImerID = setInterval(Tick,33);
-});
-audio.addEventListener("pause", ()=>{
-    clearInterval(TimerID);
-});
-audio.addEventListener("ended",()=>{
-    clearInterval(TimerID);
-});
-audio.addEventListener("timeupdate",()=>{
-    Tick();
-});
-
-
-lyrics = new LyricsContainer(lyricstext);
-
-const lyricsview = document.getElementById('LyricsView');
-let line_count = 0;
-lyrics.lines.forEach(line => {
-    let e = document.createElement("span");
-    e.textContent = line.text;
-    e.id = "LyricsLine" + line_count++;
-    e.className = "LyricsLine";
-    lyricsview.appendChild(e);
-    lyricsview.appendChild(document.createElement("br"));
-    console.log(line.text);
-  
-});
-
-
-}
-</script>
 </head>
 <body>
-<Div id="Player">
-    <audio id="song" preload controls>
-        <source src="魔王魂 ショート シャイニングスター.mp3" type="audio/mp3">
-    </audio>
-</Div>
-<div id="LyricsView">
-</div>
+<P>
+    <a href="lyrics.html">一行タイムタグ(lrc)</a><br>
+    <a href="karaoke.html">カラオケタイムタグ</a>
+</P>  
 
-<textarea id="LyricsText">
-[00:00.75]
-[00:03.38]
-[00:09.70]ただ風に揺られて
-[00:12.71]何も考えずに
-[00:15.76]ただ雲を眺めて
-[00:18.74]過ごすのもいいよね
-[00:21.45]
-[00:21.93]さざなみの音に癒やされてく
-[00:27.90]軌跡を運ぶ風の音
-[00:30.93]時を閉じ込めて
-[00:34.17]
-[00:35.19]シャイニングスター綴れば
-[00:38.15]夢に眠る幻が掌に降り注ぐ
-[00:44.62]新たな世界へ
-[00:47.44]I'll believe of my sensation
-[00:50.30]果てしない道の向こうで
-[00:53.49]瞼の裏に映る
-[00:56.74]一滴の光
-[00:59.77]トキメキを感じて
-[01:04.61]
-[01:06.23]LaLaLa LaLaLa La
-[01:09.26]LaLaLa LaLaLa La La La
-[01:15.17]
-[01:28.72]
-</textarea>
+<p>
+  <a href="rubylyrics.html">ルビ付きlrc</a><br>
+  <a href="rubykaraoke.html">ルビ付きカラオケ</a><br>
+</p>
 
+ルビ付き版のみドラッグアンドドロップでローカルファイルを入力できます。<br>
+テキストファイルまたは、拡張子.kra,.lrcを歌詞として、ブラウザが読み込める音声ファイルを音源として再生できます。
 
+<P>
+<small>音楽：<a href="https://maou.audio/" target="_blank">魔王魂</a></small>
+</P>
 </body>
 </html>

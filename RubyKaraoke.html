@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Titalyver(Karaoke)</title>
+  <title>Titalyver(Ruby Karaoke)</title>
  <style>
 #Player {
     position: fixed;
@@ -206,12 +206,12 @@ const lyricsview = document.getElementById('KaraokeView');
 lyricsview.addEventListener('dragover', function(e){
     e.stopPropagation();
     e.preventDefault();
-   
 });
 
 lyricsview.addEventListener('dragleave', function(e){
     e.stopPropagation();
-    e.preventDefault();});
+    e.preventDefault();}
+);
 
 lyricsview.addEventListener('drop', function(e){
     e.stopPropagation();

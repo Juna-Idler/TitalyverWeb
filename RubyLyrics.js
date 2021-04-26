@@ -193,7 +193,7 @@ class RubyLyricsContainer
         this.AtRubyTag = new AtRubyTag();
         this.AtRubyTag.LoadAtRubyTag(lyricstext);
         lyricstext.split(/\r\n|\r|\n/).forEach(line => {
-            let word = new TimeTagElement(line);
+            let word = TimeTagElement.Create(line);
             if (word.starttime >= 0)
             {
                 this.lines.push(new RubyLyricsLine(this.AtRubyTag.Translate(word.text),word.starttime));

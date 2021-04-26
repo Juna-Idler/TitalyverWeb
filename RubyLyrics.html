@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Titalyver</title>
+  <title>Titalyver(Ruby lrc)</title>
  <style>
 #Player {
     position: fixed;
@@ -20,11 +20,11 @@
     
 }
 .LyricsLine {
-    color :white;
-    text-shadow: 2px  2px 3px red,
-            -2px  2px 3px red,
-             2px -2px 3px red,
-            -2px -2px 3px red;
+    color :lightgray;
+    text-shadow: 2px  2px 5px red,
+            -2px  2px 5px red,
+             2px -2px 5px red,
+            -2px -2px 5px red;
   
 
     transition-property: color, text-shadow;
@@ -78,10 +78,45 @@ function Tick()
     }
 
 }
+function RenderLyricsView(lyricstext)
+{
+    const lyricsview = document.getElementById('LyricsView');
+    while (lyricsview.firstChild)
+        lyricsview.firstChild.remove();
+
+    const lyrics = new RubyLyricsContainer(lyricstext);
+    let line_count = 0;
+    lyrics.lines.forEach(line => {
+        let e = document.createElement("span");
+
+        e.innerHTML = "";
+        line.units.forEach(unit =>{
+            if (unit.hasRuby)
+            {
+                e.innerHTML += "<ruby>" + unit.base + "<rt>" + unit.ruby + "</ruby>";
+            }
+            else
+            {
+    //どういう訳か、色変更しかしないスタイルシートを切り替えるときに、ルビ無し行と空行が近くにあるとブレる
+    //ので空行とルビのない部分に全角空白をぶち込む
+                let w = unit.base != "" ? unit.base : "　";
+                e.innerHTML += "<ruby>" + w + "<rt>　</ruby>";
+            }
+            console.log(unit.base);
+        });
+
+        e.dataset.starttime = line.starttime;
+        e.className = "LyricsLine";
+        lyricsview.appendChild(e);
+        lyricsview.appendChild(document.createElement("br"));
+    });
+}
 
 window.onload = function() {
 const lyricstext = document.getElementById('LyricsText').value;
 audio = document.getElementById("song");
+
+RenderLyricsView(lyricstext);
 
 audio.addEventListener("play",()=>{
     TImerID = setInterval(Tick,33);
@@ -96,40 +131,44 @@ audio.addEventListener("timeupdate",()=>{
     Tick();
 });
 
-
-const lyrics = new RubyLyricsContainer(lyricstext);
-
 const lyricsview = document.getElementById('LyricsView');
-let line_count = 0;
-lyrics.lines.forEach(line => {
-    let e = document.createElement("span");
 
-    e.innerHTML = "";
-    line.units.forEach(unit =>{
-        if (unit.hasRuby)
-        {
-            e.innerHTML += "<ruby>" + unit.base + "<rt>" + unit.ruby + "</ruby>";
-        }
-        else
-        {
-//どういう訳か、色変更しかしないスタイルシートを切り替えるときに、ルビ無し行と空行が近くにあるとブレる
-//ので空行とルビのない部分に全角空白をぶち込む
-            let w = unit.base != "" ? unit.base : "　";
-            e.innerHTML += "<ruby>" + w + "<rt>　</ruby>";
-        }
-        console.log(unit.base);
-    });
-
-    e.dataset.starttime = line.starttime;
-    e.id = "LyricsLine" + line_count++;
-    e.className = "LyricsLine";
-    lyricsview.appendChild(e);
-    lyricsview.appendChild(document.createElement("br"));
-  
+lyricsview.addEventListener('dragover', function(e){
+    e.stopPropagation();
+    e.preventDefault();
 });
 
+lyricsview.addEventListener('dragleave', function(e){
+    e.stopPropagation();
+    e.preventDefault();}
+);
+
+lyricsview.addEventListener('drop', function(e){
+    e.stopPropagation();
+    e.preventDefault();
+
+    var files = e.dataTransfer.files;
+    for (let i = 0;i < files.length;i++)
+    {
+        const file = files[i]
+        if (file.type.indexOf("audio/") == 0)
+        {
+            audio.src = window.URL.createObjectURL(file);
+        }
+        else if (file.type.indexOf("text/") == 0 || file.name.match(/\.lrc$/i))
+        {
+            let reader = new FileReader();
+            reader.readAsText(file);
+            reader.onload = function  () {
+                document.getElementById('LyricsText').value = reader.result;
+                RenderLyricsView(reader.result);
+            }
+        }
+    }
+});
 
 }
+
 </script>
 </head>
 <body>
@@ -142,7 +181,7 @@ lyrics.lines.forEach(line => {
 </div>
 
 <textarea id="LyricsText">
-
+[00:00.00]
 [00:09.66]ただ｜風《かぜ》に｜揺《ゆ》られて
 [00:12.70]｜何《なに》も｜考《かんが》えずに
 [00:15.77]ただ｜雲《くも》を｜眺《なが》めて
