@@ -18,12 +18,17 @@
     line-height: 40px;
 
 }
+.KaraokeLine{
+    transition-duration: 0s;
+    transition-property: color,text-shadow;
+}
 .KaraokeStanbyLine {
     color :white;
     text-shadow: 2px  2px 3px navy,
             -2px  2px 3px navy,
              2px -2px 3px navy,
             -2px -2px 3px navy;
+
 
 }
 .KaraokeActiveLine {
@@ -32,6 +37,7 @@
             -2px  2px 3px blue,
              2px -2px 3px blue,
             -2px -2px 3px blue;
+
 }
 .KaraokeActiveWord {
     color :white;
@@ -50,7 +56,7 @@
 
 var TimerID;
 var audio;
-var lyrics;
+const activeline_fadeout_time = "0.5s";
 
 function Tick()
 {
@@ -58,7 +64,7 @@ function Tick()
 
     const lyricsview = document.getElementById('KaraokeView');
     const lines = lyricsview.querySelectorAll("span.KaraokeLine");
-    for (let i = 0;i < lines.length-1;i++)
+    for (let i = 0;i < lines.length;i++)
     {
         if (lines[i].dataset.starttime <= now && now < lines[i].dataset.endtime)
         {
@@ -81,11 +87,7 @@ function Tick()
                         let d = activeword.dataset.endtime - now;
                         if (d < 0) d = 0;
                         activeword.style.transitionDuration = d / 1000.0 + "s";
-                        activeword.style.textShadow = ' 2px  2px 3px red,\
-                                                        -2px  2px 3px red,\
-                                                        2px -2px 3px red,\
-                                                        -2px -2px 3px red'
-    //                        activeword.style.color = "black";
+                        activeword.classList.add("KaraokeActiveWord");
                     }
                 }
             }
@@ -97,9 +99,8 @@ function Tick()
             {
                 let spans = stanbyline.querySelectorAll("span");
                 spans.forEach(span =>{
-                    span.style.transitionDuration = "1s";
-                    span.style.color = null;
-                    span.style.textShadow = null;
+                    span.style.transitionDuration = activeline_fadeout_time;
+                    span.classList.remove("KaraokeActiveWord");
                 });
                 stanbyline.classList.replace("KaraokeActiveLine","KaraokeStanbyLine");
             }
@@ -108,10 +109,82 @@ function Tick()
 
     }
 }
+function RenderLyricsView(lyricstext)
+{
+    const lyrics = new RubyKaraokeContainer(lyricstext);
+
+    const lyricsview = document.getElementById('KaraokeView');
+    while (lyricsview.firstChild)
+        lyricsview.firstChild.remove();
+    let line_count = 0;
+    lyrics.lines.forEach(line => {
+        let le = document.createElement("span");
+        le.classList.add("KaraokeLine","KaraokeStanbyLine")
+        le.dataset.starttime = line.starttime;
+        le.dataset.endtime = line.endtime;
+
+        if (line.units.length == 1 && line.units[0].base.elements.length == 1 &&  line.units[0].base.elements[0].text == "")
+        {
+            le.innerHTML = "<ruby>　<rt>　</ruby>";
+        }
+        else
+        {
+            let element_count = 0;
+            line.units.forEach(unit => {
+                const re = document.createElement("ruby");
+                for (let i = 0;i  < unit.base.elements.length;i++)
+                {
+                    const base = unit.base.elements[i];
+                    const basespan = document.createElement("span");
+                    basespan.textContent = base.text;
+                    basespan.dataset.starttime = base.starttime;
+                    if (i < unit.base.elements.length - 1)
+                        basespan.dataset.endtime = unit.base.elements[i+1].starttime;
+                    else
+                        basespan.dataset.endtime = unit.base.endtime;
+                    re.appendChild(basespan);
+                }
+
+                const rte = document.createElement("rt");
+                if (unit.hasRuby)
+                {
+                    for (let i = 0;i  < unit.ruby.elements.length;i++)
+                    {
+                        const ruby = unit.ruby.elements[i];
+                        const rubyspan = document.createElement("span");
+                        rubyspan.textContent = ruby.text;
+                        rubyspan.dataset.starttime = ruby.starttime;
+                        rubyspan.dataset.endtime = ruby.endtime;
+                        if (i < unit.ruby.elements.length - 1)
+                            rubyspan.dataset.endtime = unit.ruby.elements[i+1].starttime;
+                        else
+                            rubyspan.dataset.endtime = unit.ruby.endtime;
+
+                        rte.appendChild(rubyspan);
+                    }
+                }
+                else if (unit.base.string != "")
+                {
+                    rte.textContent= "　";
+                }
+
+                re.appendChild(rte);
+                le.appendChild(re);
+            });
+        }
+        lyricsview.appendChild(le);
+        lyricsview.appendChild(document.createElement("br"));
+
+        line_count++;
+    });
+}
+
 
 window.onload = function() {
 const karaoketext = document.getElementById('KaraokeText').value;
 audio = document.getElementById("song");
+
+RenderLyricsView(karaoketext);
 
 audio.addEventListener("play",()=>{
     TImerID = setInterval(Tick,33);
@@ -127,74 +200,41 @@ audio.addEventListener("timeupdate",()=>{
 });
 
 
-lyrics = new RubyKaraokeContainer(karaoketext);
-
 const lyricsview = document.getElementById('KaraokeView');
-let line_count = 0;
-lyrics.lines.forEach(line => {
-    let le = document.createElement("span");
-//    le.id = "KaraokeLine" + line_count;
-    le.classList.add("KaraokeLine","KaraokeStanbyLine")
-    le.dataset.starttime = line.starttime;
-    le.dataset.endtime = line.endtime;
 
-    if (line.units.length == 1 && line.units[0].base.elements.length == 1 &&  line.units[0].base.elements[0].text == "")
-    {
-        le.innerHTML = "<ruby>　<rt>　</ruby>";
-    }
-    else
-    {
-        let element_count = 0;
-        line.units.forEach(unit => {
-            const re = document.createElement("ruby");
-            for (let i = 0;i  < unit.base.elements.length;i++)
-            {
-                const base = unit.base.elements[i];
-                const basespan = document.createElement("span");
-                basespan.textContent = base.text;
-//                basespan.id = "KaraokeWord" + line_count + "_" + element_count++;
-                basespan.dataset.starttime = base.starttime;
-                if (i < unit.base.elements.length - 1)
-                    basespan.dataset.endtime = unit.base.elements[i+1].starttime;
-                else
-                    basespan.dataset.endtime = unit.base.endtime;
-                re.appendChild(basespan);
-            }
-
-            const rte = document.createElement("rt");
-            if (unit.hasRuby)
-            {
-                for (let i = 0;i  < unit.ruby.elements.length;i++)
-                {
-                    const ruby = unit.ruby.elements[i];
-                    const rubyspan = document.createElement("span");
-                    rubyspan.textContent = ruby.text;
-//                    rubyspan.id = "KaraokeWord" + line_count + "_" + element_count++;
-                    rubyspan.dataset.starttime = ruby.starttime;
-                    rubyspan.dataset.endtime = ruby.endtime;
-                    if (i < unit.ruby.elements.length - 1)
-                        rubyspan.dataset.endtime = unit.ruby.elements[i+1].starttime;
-                    else
-                        rubyspan.dataset.endtime = unit.ruby.endtime;
-
-                    rte.appendChild(rubyspan);
-                }
-            }
-            else if (unit.base.string != "")
-            {
-                rte.textContent= "　";
-            }
-
-            re.appendChild(rte);
-            le.appendChild(re);
-        });
-    }
-    lyricsview.appendChild(le);
-    lyricsview.appendChild(document.createElement("br"));
-
-    line_count++;
+lyricsview.addEventListener('dragover', function(e){
+    e.stopPropagation();
+    e.preventDefault();
+   
 });
 
+lyricsview.addEventListener('dragleave', function(e){
+    e.stopPropagation();
+    e.preventDefault();});
+
+lyricsview.addEventListener('drop', function(e){
+    e.stopPropagation();
+    e.preventDefault();
+
+    var files = e.dataTransfer.files;
+    for (let i = 0;i < files.length;i++)
+    {
+        const file = files[i]
+        if (file.type.indexOf("audio/") == 0)
+        {
+            audio.src = window.URL.createObjectURL(file);
+        }
+        else if (file.type.indexOf("text/") == 0 || file.name.match(/\.(kra|lrc)$/i))
+        {
+            let reader = new FileReader();
+            reader.readAsText(file);
+            reader.onload = function  () {
+                document.getElementById('KaraokeText').value = reader.result;
+                RenderLyricsView(reader.result);
+            }
+        }
+    }
+});
 
 }
 </script>
@@ -205,10 +245,10 @@ lyrics.lines.forEach(line => {
         <source src="魔王魂 ショート シャイニングスター.mp3" type="audio/mp3">
     </audio>
 </Div>
-<div id="KaraokeView">
+<div id="KaraokeView" >
 </div>
 
-<textarea id="KaraokeText">
+<textarea id="KaraokeText" readonly style="width: 100%;height:10em">
 [00:00.00]
 [00:09.66]た[00:09.85]だ[00:10.42]｜風《[00:10.42]か[00:10.59]ぜ[00:11.15]》[00:11.15]に[00:11.35]｜揺《[00:11.35]ゆ[00:11.58]》[00:11.58]ら[00:11.78]れ[00:11.98]て[00:12.42]
 [00:12.70]｜何《[00:12.70]な[00:12.88]に[00:13.05]》[00:13.05]も[00:13.27]｜考《[00:13.27]か[00:13.47]ん[00:13.84]が[00:14.22]》[00:14.22]え[00:14.54]ず[00:14.78]に[00:15.35]

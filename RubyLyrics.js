@@ -70,16 +70,16 @@ class AtRubyTag
 
     AtRubying(text)
     {
-        let targets = [];
-        targets.push(new RubyUnit(text));
+        let result = [];
+        result.push(new RubyUnit(text));
         this.rubying.forEach(rubying =>
         {
-            for (let i = 0;i < targets.length;i++)
+            for (let i = 0;i < result.length;i++)
             {
-                if (targets[i].hasRuby)
+                if (result[i].hasRuby)
                     continue;
 
-                const target = targets[i].word;
+                const target = result[i].base;
                 const index = target.indexOf(rubying.target);
                 if (index >= 0)
                 {
@@ -88,39 +88,55 @@ class AtRubyTag
 
                     if (div1 > 0 && div2 < target.length)
                     {
-                        targets.splice(i,1,new RubyUnit(target.substring(0,div1)),
+                        result.splice(i,1,new RubyUnit(target.substring(0,div1)),
                                            new RubyUnit(target.substring(div1,div2),rubying.ruby),
                                            new RubyUnit(target.substring(div2)));
                         i++;
                     }
                     else if (div1 == 0 && div2 < target.length)
                     {
-                        targets.splice(i,1,new RubyUnit(target.substring(0,div2),rubying.ruby),
+                        result.splice(i,1,new RubyUnit(target.substring(0,div2),rubying.ruby),
                                            new RubyUnit(target.substring(div2)));
 
                    }               
                    else if (div1 > 0 && div2 == target.length)
                    {
-                        targets.splice(i,1,new RubyUnit(target.substring(0,div1)),
+                        result.splice(i,1,new RubyUnit(target.substring(0,div1)),
                                        new RubyUnit(target.substring(div1),rubying.ruby));
                         i++;
                    }
                    else if (div1 == 0 && div2 == target.length)
                    {
-                        targets[i].ruby = rubying.ruby;
+                        result[i].ruby = rubying.ruby;
                    }
                 }
             }
 
         });
-        return targets;
+        return result;
     }
+
+
 
     Translate(text)
     {
-        let r = [];
+        //エスケープコードは拾った
+        (function (w) {
+            var reRegExp = /[\\^$.*+?()[\]{}|]/g,
+                reHasRegExp = new RegExp(reRegExp.source);
+        
+            function escapeRegExp(string) {
+                return (string && reHasRegExp.test(string))
+                    ? string.replace(reRegExp, '\\$&')
+                    : string;
+            }
+        
+            w.escapeRegExp = escapeRegExp;
+        })(window);
+    
+        let result = [];
         let target = text;
-        const reg = new RegExp(this.ruby_parent + "(.+?)" + this.ruby_begin + "(.+?)" + this.ruby_end)
+        const reg = new RegExp(escapeRegExp(this.ruby_parent) + "(.+?)" + escapeRegExp(this.ruby_begin) + "(.+?)" + escapeRegExp(this.ruby_end));
         do
         {
             const rubyblock = target.match(reg);
@@ -128,34 +144,34 @@ class AtRubyTag
             {
                 if (rubyblock.index > 0)
                 {
-                    r.push(new RubyUnit(target.substring(0,rubyblock.index)));
+                    result.push(new RubyUnit(target.substring(0,rubyblock.index)));
                 }
-                r.push(new RubyUnit(rubyblock[1],rubyblock[2]));
+                result.push(new RubyUnit(rubyblock[1],rubyblock[2]));
                 target = target.substring(rubyblock.index + rubyblock[0].length);
             }
             else
             {
-                r.push(new RubyUnit(target));
+                result.push(new RubyUnit(target));
                 break;
             }
         } while (target.length > 0);
 
-        for (let i = 0;i < r.length;i++)
+        for (let i = 0;i < result.length;i++)
         {
-            if (r[i].noRuby)
+            if (result[i].noRuby)
             {
-                const arw = this.AtRubying(r[i].base);
+                const arw = this.AtRubying(result[i].base);
                 if (arw.length == 1 && arw[0].hasRuby)
                 {
-                    r[i].ruby = arw[0].ruby;
+                    result[i].ruby = arw[0].ruby;
                 }
                 else if (arw.length > 1)
                 {
-                    r.splice(i,1,...arw);
+                    result.splice(i,1,...arw);
                 }
             }
         }
-        return r;
+        return result;
     }
     
 }
@@ -244,33 +260,97 @@ class RubyKaraokeUnit
 //ルビを含むカラオケタイムタグ歌詞一行
 class RubyKaraokeLine
 {
-    constructor(textline,atrubytag,endtime = -1)
+    constructor(textline,atrubytag,endtime)
     {
         this.units = [];
         const ruby_units = atrubytag.Translate(textline);
         for (let i = 0; i < ruby_units.length;i++)
         {
-            const base_unit = new KaraokeUnit(ruby_units[i].base);
-            let newunit;
-            if (ruby_units[i].hasRuby)
-            {
-                const ruby_unit = new KaraokeUnit(ruby_units[i].ruby);
-                newunit = new RubyKaraokeUnit(base_unit,ruby_unit);
-            }
-            else
-            {
-                newunit = new RubyKaraokeUnit(base_unit,null);
-            }
-            if (i < ruby_units.length - 1 && newunit.endtime < 0)
-            {
-                newunit.endtime = ruby_units[i+1].starttime;
-            }
-            this.units.push(newunit);
+            this.units.push(
+                new RubyKaraokeUnit(
+                    new KaraokeUnit(ruby_units[i].base),
+                    ruby_units[i].hasRuby ? new KaraokeUnit(ruby_units[i].ruby) : null));
         }
         if (this.units[this.units.length-1].endtime < 0)
             this.units[this.units.length-1].endtime = endtime;
 
 //[]タイムタグで認識しなかった@rubyを追加したいが、このデータ構造だとめっちゃめんどくさいな
+
+//RubyKaraokeUnit境界でのタイムタグ補完処理
+        for (let i = 1;i < this.units.length-1;i++)
+        {
+            if (this.units[i-1].endtime < 0)
+            {
+                if (this.units[i].starttime >= 0)
+                    this.units[i-1].endtime = this.units[i].starttime;
+                else
+                {
+                    const prevtime = this.units[i-1].base.elements[this.units[i-1].base.elements.length-1].starttime;
+                    const prevcount = this.units[i-1].base.elements[this.units[i-1].base.elements.length-1].text.length;
+
+                    let nexttime = -1;
+                    let nextcount = 0;
+                    for (let j = i;j < this.units.length;j++)
+                    {
+                        for (let k = 0;k < this.units[j].base.elements.length;k++)
+                        {
+                            if (this.units[j].base.elements[k].starttime >= 0)
+                            {
+                                nexttime = this.units[j].base.elements[k].starttime;
+                                break;
+                            }
+                            nextcount += this.units[j].base.elements[k].text.length;
+                        }
+                        if (nexttime >= 0)
+                            break;
+                        if (this.units[j].endtime >= 0)
+                        {
+                            nexttime = this.units[j].endtime;
+                            break;
+                        }
+                    }
+                    this.units[i-1].endtime = (prevtime * nextcount + nexttime * prevcount) / (prevcount + nextcount);
+                }
+            }
+            if (this.units[i].starttime < 0)
+            {
+                this.units[i].starttime = this.units[i-1].endtime;
+            }
+        }
+        if (this.units.length == 2)
+        {
+            if (this.units[0].endtime < 0)
+            {
+                if (this.units[1].starttime >= 0)
+                    this.units[0].endtime = this.units[1].starttime;
+                else
+                {
+                    const prevtime = this.units[0].base.elements[this.units[0].base.elements.length-1].starttime;
+                    const prevcount = this.units[0].base.elements[this.units[0].base.elements.length-1].text.length;
+
+                    let nexttime = -1;
+                    let nextcount = 0;
+                    for (let j = 0;j < this.units[1].base.elements.length;j++)
+                    {
+                        if (this.units[1].base.elements[j].starttime >= 0)
+                        {
+                            nexttime = this.units[1].base.elements[j].starttime;
+                            break;
+                        }
+                        nextcount += this.units[1].base.elements[j].text.length;
+                    }
+                    if (nexttime < 0)
+                    {
+                        nexttime = this.units[1].endtime;
+                    }
+                    this.units[0].endtime = (prevtime * nextcount + nexttime * prevcount) / (prevcount + nextcount);
+                }
+            }
+            if (this.units[1].starttime < 0)
+            {
+                this.units[1].starttime = this.units[0].endtime;
+            }
+        }
 
         this.starttime = this.units[0].starttime;
         this.endtime = Math.max(this.units[this.units.length-1].endtime,endtime);
@@ -284,21 +364,22 @@ class RubyKaraokeContainer
         this.AtRubyTag = new AtRubyTag();
         this.AtRubyTag.LoadAtRubyTag(karaoketext);
 
-        this.lines = [];
+        let lines = []
         karaoketext.split(/\r\n|\r|\n/).forEach(line => {
  
             let linehead = line.match(/^\[(\d+):(\d+)[:.](\d+)\]/);
             if (linehead)
             {
-                this.lines.push(new RubyKaraokeLine(line,this.AtRubyTag));
+                lines.push(line);
             }
         });
-        this.lines.push(new RubyKaraokeLine("[99:59.99]",this.AtRubyTag));
+        lines.push("[99:59.99]");
 
-        for (let i = 0;i< this.lines.length - 1;i++)
+        this.lines = [];
+        for (let i = 0;i< lines.length - 1;i++)
         {
-            if (this.lines[i].endtime < this.lines[i+1].starttime)
-                this.lines[i].endtime = this.lines[i+1].starttime;
+            const nexttime = new TimeTagElement(lines[i + 1]).starttime;
+            this.lines.push(new RubyKaraokeLine(lines[i],this.AtRubyTag,nexttime));
         }
 
     }
