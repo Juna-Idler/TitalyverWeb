@@ -7,7 +7,7 @@ class TimeTagElement
         if (match)
         {
             const second = parseFloat(match[2] + '.' + match[3]);
-            const this_starttime = (match[1] * 60000 + second * 1000).toFixed();
+            const this_starttime = (match[1] * 60000 + second * 1000) | 0;
             return new TimeTagElement(this_starttime,match[4]);
         }
         return new TimeTagElement(-1,text);
